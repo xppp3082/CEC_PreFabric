@@ -52,7 +52,7 @@ namespace CEC_PreFabric
                 string viewName = ui.viewNameTextBox.Text;
                 string levelName = ui.levelName.Text;
                 string regionName = ui.regionName.Text;
-                 Autodesk.Revit.DB.View selectedView = ui.viewTemplateComboBox.SelectedItem as Autodesk.Revit.DB.View;
+                Autodesk.Revit.DB.View selectedView = ui.viewTemplateComboBox.SelectedItem as Autodesk.Revit.DB.View;
                 //MessageBox.Show(selectedView.Name);
 
                 //拿到管元件-先測試本地的
@@ -155,8 +155,8 @@ namespace CEC_PreFabric
                     //3.將剩下的品類寫入既有binding
                     //string spName = "管料裁切編號";
                     //string spFullName = "裁切料號";
-                    List<string> paraName = new List<string>() { "管料裁切編號","裁切料號"};
-                    foreach(string st in paraName)
+                    List<string> paraName = new List<string>() { "管料裁切編號", "裁切料號" };
+                    foreach (string st in paraName)
                     {
                         List<Category> defaultCateList = new List<Category>()
                 {
@@ -224,6 +224,7 @@ namespace CEC_PreFabric
                                     }
                                 }
                             }
+
                             //在此之前要建立一個審核該參數是否已經被載入的機制，如果已被載入則不載入
                             if (targetDefinition != null)
                             {
@@ -234,61 +235,66 @@ namespace CEC_PreFabric
                                     doc.ParameterBindings.Insert(targetDefinition, newIB, BuiltInParameterGroup.PG_SEGMENTS_FITTINGS);
                                     trans.Commit();
                                 }
+                                MessageBox.Show("YA，找到了");
                             }
-                        }
-                        #endregion
-                        //step4 - 針對視圖中的管材加上tag，分組並上入編號-->分組的寫法該怎麼寫還待思考
-                        int keyToSet = 1;
-                        List<Element> pipeListToCheck = pickPipes; //新增另外一個List去做交叉比對，利用他來對照pickPipes中的元件，以及刪除已經配對到的
-                        List<Element> alreadySetList = new List<Element>(); //新增一個List去蒐集已經編號過的
-                        Element tempElem = null;
-                        string outPut = "";
-                        foreach (Element e in pickPipes)
-                        {
-                            List<Element> sameList = new List<Element>();
-                            tempElem = e;
-                            //比較的基準-->材料(名稱)、管徑(大小)、長度
-                            string elemName = e.Name;
-                            string elemSize = getPipeDiameter(e);
-                            double elemLength = Math.Round(e.get_Parameter(BuiltInParameter.CURVE_ELEM_LENGTH).AsDouble(), 2);
-                            //string elemFabName = e.LookupParameter(spName).AsString();
-                            //if (elemFabName != "")
-                            //{
-                            //    MessageBox.Show("選中管件中已寫入裁切編號，請清除編號後再重新寫入");
-                            //    return Result.Failed;
-                            //}
-                            foreach (Element ee in pickPipes)
+                            else if (targetDefinition == null)
                             {
-                                double tempLength = Math.Round(ee.get_Parameter(BuiltInParameter.CURVE_ELEM_LENGTH).AsDouble(), 2);
-                                if (elemName == ee.Name && elemSize == getPipeDiameter(ee) && !alreadySetList.Contains(ee) && elemLength == tempLength/*&& ee.LookupParameter(spName).AsString() == ""*/)
-                                {
-                                    sameList.Add(ee);
-                                    alreadySetList.Add(ee);
-                                }
-                            }
-
-                            if (sameList.Count() > 0)
-                            {
-                                outPut += $"與名為{elemName}，且大小同為{elemSize}的管材共有{sameList.Count()}個\n";
-                                using (Transaction trans = new Transaction(doc))
-                                {
-                                    trans.Start("寫入裁切編號");
-                                    foreach (Element p in sameList)
-                                    {
-                                        Parameter fabNum = p.LookupParameter(paraName[0]);
-                                        Parameter fabFullName = p.LookupParameter(paraName[1]);
-                                        string systemName = p.get_Parameter(BuiltInParameter.RBS_DUCT_PIPE_SYSTEM_ABBREVIATION_PARAM).AsString();
-                                        string numToSet = systemName + "-" + levelName + "-" + regionName + "-" + keyToSet.ToString();
-                                        fabNum.Set(keyToSet.ToString());
-                                        fabFullName.Set(numToSet);
-                                    }
-                                    keyToSet += 1;
-                                    trans.Commit();
-                                }
+                                MessageBox.Show($"共用參數中沒有找到 {st} 參數");
                             }
                         }
                     }
-
+                    #endregion
+                    //step4 - 針對視圖中的管材加上tag，分組並上入編號-->分組的寫法該怎麼寫還待思考
+                    string filterName = "";
+                    int keyToSet = 1;
+                    List<Element> pipeListToCheck = pickPipes; //新增另外一個List去做交叉比對，利用他來對照pickPipes中的元件，以及刪除已經配對到的
+                    List<Element> alreadySetList = new List<Element>(); //新增一個List去蒐集已經編號過的
+                    Element tempElem = null;
+                    string outPut = "";
+                    foreach (Element e in pickPipes)
+                    {
+                        List<Element> sameList = new List<Element>();
+                        tempElem = e;
+                        //比較的基準-->材料(名稱)、管徑(大小)、長度
+                        string elemName = e.Name;
+                        string elemSize = getPipeDiameter(e);
+                        double elemLength = Math.Round(e.get_Parameter(BuiltInParameter.CURVE_ELEM_LENGTH).AsDouble(), 2);
+                        //string elemFabName = e.LookupParameter(spName).AsString();
+                        //if (elemFabName != "")
+                        //{
+                        //    MessageBox.Show("選中管件中已寫入裁切編號，請清除編號後再重新寫入");
+                        //    return Result.Failed;
+                        //}
+                        foreach (Element ee in pickPipes)
+                        {
+                            double tempLength = Math.Round(ee.get_Parameter(BuiltInParameter.CURVE_ELEM_LENGTH).AsDouble(), 2);
+                            if (elemName == ee.Name && elemSize == getPipeDiameter(ee) && !alreadySetList.Contains(ee) && elemLength == tempLength/*&& ee.LookupParameter(spName).AsString() == ""*/)
+                            {
+                                sameList.Add(ee);
+                                alreadySetList.Add(ee);
+                            }
+                        }
+                        if (sameList.Count() > 0)
+                        {
+                            outPut += $"與名為{elemName}，且大小同為{elemSize}的管材共有{sameList.Count()}個\n";
+                            using (Transaction trans = new Transaction(doc))
+                            {
+                                trans.Start("寫入裁切編號");
+                                foreach (Element p in sameList)
+                                {
+                                    Parameter fabNum = p.LookupParameter(paraName[0]);
+                                    Parameter fabFullName = p.LookupParameter(paraName[1]);
+                                    string systemName = p.get_Parameter(BuiltInParameter.RBS_DUCT_PIPE_SYSTEM_ABBREVIATION_PARAM).AsString();
+                                    string numToSet = systemName + "-" + levelName + "-" + regionName + "-" + keyToSet.ToString();
+                                    filterName = systemName + "-" + levelName + "-" + regionName;
+                                    fabNum.Set(keyToSet.ToString());
+                                    fabFullName.Set(numToSet);
+                                }
+                                keyToSet += 1;
+                                trans.Commit();
+                            }
+                        }
+                    }
                     //針對每個元件放上多重品類標籤
                     Element multiCateTag = findMultiCateTag(doc);
                     using (Transaction trans = new Transaction(doc))
@@ -311,6 +317,36 @@ namespace CEC_PreFabric
                         trans.Commit();
                     }
                     //MessageBox.Show(outPut);
+
+                    //step5 創造管段明細表
+                    List<string> scheduleParas = new List<string>()
+                    {
+                        "裁切料號","系統類型","管料裁切編號","大小","長度","數量"
+                    };
+
+                    using (Transaction trans = new Transaction(doc))
+                    {
+                        trans.Start("創建管明細表");
+                        ElementId pipeCateId = new ElementId(BuiltInCategory.OST_PipeCurves);
+                        ViewSchedule schedule = ViewSchedule.CreateSchedule(doc, pipeCateId);
+                        schedule.Name = viewName + "管料裁切明細表";
+                        ScheduleFilter numFilter = null;
+                        foreach (SchedulableField sf in schedule.Definition.GetSchedulableFields())
+                        {
+                            if (scheduleParas.Contains(sf.GetName(doc)))
+                            {
+                                ScheduleField scheduleField = schedule.Definition.AddField(sf);
+                                if (sf.GetName(doc) == "裁切料號")
+                                {
+                                    numFilter = new ScheduleFilter(scheduleField.FieldId, ScheduleFilterType.Contains, filterName);
+                                }
+                            }
+                        }
+                        //目前尚缺減去詳細列舉每個實體的機制&針對明細表攔位的排序
+                        MessageBox.Show(filterName);
+                        schedule.Definition.AddFilter(numFilter);
+                        trans.Commit();
+                    }
                     transGroup.Assimilate();
                 }
             }
@@ -319,15 +355,15 @@ namespace CEC_PreFabric
                 MessageBox.Show("執行失敗");
                 return Result.Failed;
             }
-
             return Result.Succeeded;
         }
         //製作一個方法找到多重品類標籤
         public Element findMultiCateTag(Document doc)
-        { string tagetName = "M_裁切編號標籤_多重品類標籤";
+        {
+            string tagetName = "M_裁切編號標籤_多重品類標籤";
             Element targetElement = null;
             FilteredElementCollector coll = new FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_MultiCategoryTags).WhereElementIsElementType();
-            foreach(Element e in coll)
+            foreach (Element e in coll)
             {
                 if (e.Name == tagetName) targetElement = e;
             }
