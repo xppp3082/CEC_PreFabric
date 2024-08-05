@@ -20,6 +20,7 @@ namespace CEC_PreFabric
     {
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
         {
+            Counter.count += 1;
             UIApplication uiapp = commandData.Application;
             UIDocument uidoc = uiapp.ActiveUIDocument;
             Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;

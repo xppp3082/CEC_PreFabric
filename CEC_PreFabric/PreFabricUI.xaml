@@ -100,7 +100,7 @@
         <TextBlock  Text="—" Grid.Column="7" Grid.Row="4" VerticalAlignment="Center" HorizontalAlignment="Center" FontSize="14"/>
         <TextBlock x:Name="numName"  Grid.Column="8" Grid.Row="4"  VerticalAlignment="Center" HorizontalAlignment="Center"  FontSize="14" Margin="10" Text="編號" TextAlignment="Right"  />
         <TextBlock x:Name="startingNumTxtBlock" Grid.Column="0" Grid.Row="6" HorizontalAlignment="Right" VerticalAlignment="Center" TextWrapping="Wrap" Text="起始編號：" FontSize="14" Margin="10,0" />
-        <TextBox x:Name="startingNumTextBox"  Grid.Column="2" Grid.Row="6"  Grid.ColumnSpan="3" FontSize="14" Margin="15,10" Text="1" TextAlignment="Right" VerticalContentAlignment="Center" Foreground="Gray"  KeyDown="TextBox_KeyDown" />
+        <TextBox x:Name="startingNumTextBox"  Grid.Column="2" Grid.Row="6"  Grid.ColumnSpan="3" FontSize="14" Margin="15,10" Text="1" TextAlignment="Right" VerticalContentAlignment="Center"  KeyDown="TextBox_KeyDown" />
         <Button x:Name="continueButton"  Content ="確定"  Grid.Column="6" Grid.Row="8" Margin="5,5" Click="ContinueButton_Click"/>
         <Button x:Name="cancelButton" Content ="取消" Grid.Column="8" Grid.Row="8" Margin="5,5" Click="CancelButton_Click" />
     </Grid>

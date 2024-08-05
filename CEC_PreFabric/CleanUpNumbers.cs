@@ -22,12 +22,13 @@ namespace CEC_PreFabric
     {
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
         {
+            Counter.count += 1;
             UIApplication uiapp = commandData.Application;
             UIDocument uidoc = uiapp.ActiveUIDocument;
             Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
             Document doc = uidoc.Document;
             Autodesk.Revit.DB.View activeView = doc.ActiveView;
-            string paraToCheck = "管料裁切編號";
+            string paraToCheck = "【預組】編號";
             if(activeView.ViewType != ViewType.ThreeD)
             {
                 MessageBox.Show("本視圖並非3D視圖，請至3D視圖使用此功能");

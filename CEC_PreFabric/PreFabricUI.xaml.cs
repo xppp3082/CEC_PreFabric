@@ -25,9 +25,11 @@ namespace CEC_PreFabric
         {
             InitializeComponent();
         }
+        //public bool cancelClick = false;
         private void ContinueButton_Click(object sender,RoutedEventArgs e)
         {
             Debug.WriteLine("Continue button was clicked");
+            this.DialogResult = true;
             Close();
             return;
         }
@@ -35,6 +37,8 @@ namespace CEC_PreFabric
         private void CancelButton_Click(object sender, RoutedEventArgs e)
         {
             Debug.WriteLine("Cancel button was clicked.");
+            this.DialogResult = false;
+            //cancelClick = true;
             Close();
             return;
         }

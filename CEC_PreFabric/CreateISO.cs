@@ -12,6 +12,7 @@ using Autodesk.Revit.DB.Structure;
 using System.Windows.Forms;
 using Autodesk.Revit.Attributes;
 using System.IO;
+using System.Threading;
 #endregion
 
 namespace CEC_PreFabric
@@ -24,9 +25,14 @@ namespace CEC_PreFabric
     [Transaction(TransactionMode.Manual)]
     public class CreateISO : IExternalCommand
     {
+#if RELEASE2019
         public static DisplayUnitType unitType = DisplayUnitType.DUT_MILLIMETERS;
+#else
+        public static ForgeTypeId unitType = UnitTypeId.Millimeters;
+#endif
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
         {
+            Counter.count += 1;
             UIApplication uiapp = commandData.Application;
             UIDocument uidoc = uiapp.ActiveUIDocument;
             Autodesk.Revit.ApplicationServices.Application app = uiapp.Application;
@@ -49,12 +55,37 @@ namespace CEC_PreFabric
                 ui.startingNumTextBox.IsReadOnly = true;
                 ui.viewTemplateComboBox.ItemsSource = templateList;
                 ui.ShowDialog();
+                //利用DialogResult來判斷UI是否成功執行
+                if (ui.DialogResult == false)
+                {
+                    return Result.Failed;
+                }
                 string viewName = ui.viewNameTextBox.Text;
                 string levelName = ui.levelName.Text;
                 string regionName = ui.regionName.Text;
                 Autodesk.Revit.DB.View selectedView = ui.viewTemplateComboBox.SelectedItem as Autodesk.Revit.DB.View;
-                //MessageBox.Show(selectedView.Name);
-
+                List<string> checkList = new List<string>() { viewName, levelName, regionName };
+                bool cancel = false;
+                if (selectedView == null)
+                {
+                    cancel = true;
+                }
+                else
+                {
+                    foreach (string str in checkList)
+                    {
+                        if (str == "")
+                        {
+                            cancel = true;
+                            break;
+                        }
+                    }
+                }
+                if (cancel == true)
+                {
+                    MessageBox.Show("視窗上的內容不可為空，\n請檢查「視圖名稱」、「視圖樣版」、「裁切料號」參數是否都有正確填入!");
+                    return Result.Failed;
+                }
                 //拿到管元件-先測試本地的
                 ISelectionFilter pipeFilter = new PipeSelectionFilter(doc);
                 ISelectionFilter linkedPipeFilter = new linkedPipeSelectionFilter(doc);
@@ -66,7 +97,6 @@ namespace CEC_PreFabric
                     Element tempPipe = doc.GetElement(refer);
                     pickPipes.Add(tempPipe);
                 }
-
                 using (TransactionGroup transGroup = new TransactionGroup(doc))
                 {
                     transGroup.Start("產生預製ISO圖");
@@ -119,7 +149,6 @@ namespace CEC_PreFabric
                             XYZ minCorner = tempBox.Min;
                             boundingCorners.Add(maxCorner);
                             boundingCorners.Add(minCorner);
-
                             //拆解XYZ值之後加入
                             boundingX.Add(maxCorner.X);
                             boundingX.Add(minCorner.X);
@@ -153,10 +182,11 @@ namespace CEC_PreFabric
                     //1.要先確認這個binding是否存在
                     //2.確認想寫入的品類裡有沒有這個參數，如果有則去除這個品類
                     //3.將剩下的品類寫入既有binding
-                    //string spName = "管料裁切編號";
-                    //string spFullName = "裁切料號";
-                    List<string> paraName = new List<string>() { "管料裁切編號", "裁切料號" };
-                    foreach (string st in paraName)
+                    List<string> paraName1 = new List<string>() {"【預組】系統別", "【預組】樓層", "【預組】區域", "【預組】編號" };
+                    //List<string> paraName = new List<string>() { "管料裁切編號", "裁切料號" };
+                    string checkString = "";
+                    //foreach (string st in paraName)
+                    foreach (string st in paraName1)
                     {
                         List<Category> defaultCateList = new List<Category>()
                 {
@@ -188,7 +218,6 @@ namespace CEC_PreFabric
                                 break;
                             }
                         }
-
                         //如果該共用參數已經載入成為專案參數，重新加入binding
                         if (d.Name == st && catSet.Size > 0)
                         {
@@ -204,7 +233,8 @@ namespace CEC_PreFabric
                         else if (d.Name != st)
                         {
                             //MessageBox.Show($"專案尚未載入「 {spName}」 參數，將自動載入");
-                            MessageBox.Show($"專案尚未載入「 {st}」 參數，將自動載入");
+                            checkString += $"專案尚未載入「 {st}」 參數，將自動載入\n";
+                            //MessageBox.Show($"專案尚未載入「 {st}」 參數，將自動載入");
                             var infoPath = @"Dropbox\info.json";
                             var jsonPath = Path.Combine(Environment.GetEnvironmentVariable("LocalAppData"), infoPath);
                             if (!File.Exists(jsonPath)) jsonPath = Path.Combine(Environment.GetEnvironmentVariable("AppData"), infoPath);
@@ -224,7 +254,6 @@ namespace CEC_PreFabric
                                     }
                                 }
                             }
-
                             //在此之前要建立一個審核該參數是否已經被載入的機制，如果已被載入則不載入
                             if (targetDefinition != null)
                             {
@@ -235,7 +264,6 @@ namespace CEC_PreFabric
                                     doc.ParameterBindings.Insert(targetDefinition, newIB, BuiltInParameterGroup.PG_SEGMENTS_FITTINGS);
                                     trans.Commit();
                                 }
-                                MessageBox.Show("YA，找到了");
                             }
                             else if (targetDefinition == null)
                             {
@@ -243,6 +271,7 @@ namespace CEC_PreFabric
                             }
                         }
                     }
+                    //MessageBox.Show(checkString);
                     #endregion
                     //step4 - 針對視圖中的管材加上tag，分組並上入編號-->分組的寫法該怎麼寫還待思考
                     string filterName = "";
@@ -282,13 +311,23 @@ namespace CEC_PreFabric
                                 trans.Start("寫入裁切編號");
                                 foreach (Element p in sameList)
                                 {
-                                    Parameter fabNum = p.LookupParameter(paraName[0]);
-                                    Parameter fabFullName = p.LookupParameter(paraName[1]);
+                                    //Parameter fabNum = p.LookupParameter(paraName[0]);
+                                    //Parameter fabFullName = p.LookupParameter(paraName[1]);
+                                    Parameter pipeSystem = p.LookupParameter(paraName1[0]);
+                                    Parameter pipeLevel = p.LookupParameter(paraName1[1]);
+                                    Parameter pipeRegion = p.LookupParameter(paraName1[2]);
+                                    Parameter pipeNum = p.LookupParameter(paraName1[3]);
+
                                     string systemName = p.get_Parameter(BuiltInParameter.RBS_DUCT_PIPE_SYSTEM_ABBREVIATION_PARAM).AsString();
-                                    string numToSet = systemName + "-" + levelName + "-" + regionName + "-" + keyToSet.ToString();
+                                    //string numToSet = systemName + "-" + levelName + "-" + regionName + "-" + keyToSet.ToString();
                                     filterName = systemName + "-" + levelName + "-" + regionName;
-                                    fabNum.Set(keyToSet.ToString());
-                                    fabFullName.Set(numToSet);
+                                    //fabNum.Set(keyToSet.ToString());
+                                    //fabFullName.Set(numToSet);
+                                    pipeSystem.Set(systemName);
+                                    pipeLevel.Set(levelName);
+                                    pipeRegion.Set(regionName);
+                                    pipeNum.Set(keyToSet.ToString());
+
                                 }
                                 keyToSet += 1;
                                 trans.Commit();
@@ -297,6 +336,7 @@ namespace CEC_PreFabric
                     }
                     //針對每個元件放上多重品類標籤
                     Element multiCateTag = findMultiCateTag(doc);
+                    if (multiCateTag == null) MessageBox.Show("專案尚未載入預組視圖專用標籤");
                     using (Transaction trans = new Transaction(doc))
                     {
                         trans.Start("放置多重品類標籤");
@@ -319,32 +359,87 @@ namespace CEC_PreFabric
                     //MessageBox.Show(outPut);
 
                     //step5 創造管段明細表
-                    List<string> scheduleParas = new List<string>()
-                    {
-                        "裁切料號","系統類型","管料裁切編號","大小","長度","數量"
-                    };
-
+                    //List<string> scheduleParas = new List<string>()
+                    //{
+                    //    "裁切料號","系統類型","管料裁切編號","大小","長度","數量"
+                    //};
+                    List<string> tempList = new List<string>() { "大小", "長度", "數量" };
+                    List<string> scheduleParas = new List<string>();
+                    scheduleParas = paraName1.Union(tempList).ToList();
                     using (Transaction trans = new Transaction(doc))
                     {
                         trans.Start("創建管明細表");
                         ElementId pipeCateId = new ElementId(BuiltInCategory.OST_PipeCurves);
                         ViewSchedule schedule = ViewSchedule.CreateSchedule(doc, pipeCateId);
                         schedule.Name = viewName + "管料裁切明細表";
-                        ScheduleFilter numFilter = null;
-                        foreach (SchedulableField sf in schedule.Definition.GetSchedulableFields())
+                        //ScheduleFilter numFilter = null;
+                        ScheduleFilter systemFilter = null;
+                        ScheduleFilter levelFilter = null;
+                        ScheduleFilter regionFilter = null;
+                        ScheduleSortGroupField numberSorting = null;
+                        foreach (string str in scheduleParas)
                         {
-                            if (scheduleParas.Contains(sf.GetName(doc)))
+                            foreach (SchedulableField sf in schedule.Definition.GetSchedulableFields())
                             {
-                                ScheduleField scheduleField = schedule.Definition.AddField(sf);
-                                if (sf.GetName(doc) == "裁切料號")
+                                if (sf.GetName(doc) == str)
                                 {
-                                    numFilter = new ScheduleFilter(scheduleField.FieldId, ScheduleFilterType.Contains, filterName);
+                                    {
+                                        ScheduleField scheduleField = schedule.Definition.AddField(sf);
+                                        ////1.以系統進行篩選
+                                        //if (sf.GetName(doc) == paraName1[0])
+                                        //{
+                                        //    systemFilter = new ScheduleFilter(scheduleField.FieldId,ScheduleFilterType.Equal.systemName)
+                                        //}
+                                        //2.以樓層進行篩選
+                                       if (sf.GetName(doc) == paraName1[1])
+                                        {
+                                            levelFilter = new ScheduleFilter(scheduleField.FieldId, ScheduleFilterType.Equal, levelName);
+                                        }
+                                        //3.以區域進行篩選
+                                        else if (sf.GetName(doc) == paraName1[2])
+                                        {
+                                            regionFilter = new ScheduleFilter(scheduleField.FieldId, ScheduleFilterType.Equal, regionName);
+                                        }
+                                        //4.以編號進行排序
+                                        else if (sf.GetName(doc) == paraName1[3])
+                                        {
+                                            numberSorting = new ScheduleSortGroupField(scheduleField.FieldId);
+                                        }
+                                        #region 以前只匯入裁切料號與管料裁切編號的舊寫法
+                                        ////以裁切料號進行明細表元件的篩選
+                                        //if (sf.GetName(doc) == "裁切料號")
+                                        //{
+                                        //    numFilter = new ScheduleFilter(scheduleField.FieldId, ScheduleFilterType.Contains, filterName);
+                                        //}
+                                        ////以管料裁切編號進行排序
+                                        //if (sf.GetName(doc) == "管料裁切編號")
+                                        //{
+                                        //    numberSorting = new ScheduleSortGroupField(scheduleField.FieldId);
+                                        //}
+                                        #endregion
+                                    }
                                 }
                             }
+                            #region 添加欄位的舊寫法
+                            //foreach (SchedulableField sf in schedule.Definition.GetSchedulableFields())
+                            //{
+                            //    if (scheduleParas.Contains(sf.GetName(doc)))
+                            //    {
+                            //        ScheduleField scheduleField = schedule.Definition.AddField(sf);
+                            //        if (sf.GetName(doc) == "裁切料號")
+                            //        {
+                            //            numFilter = new ScheduleFilter(scheduleField.FieldId, ScheduleFilterType.Contains, filterName);
+                            //        }
+                            //    }
+                            //}
+                            #endregion
+                            //目前尚缺減去詳細列舉每個實體的機制&針對明細表攔位的排序
                         }
-                        //目前尚缺減去詳細列舉每個實體的機制&針對明細表攔位的排序
-                        MessageBox.Show(filterName);
-                        schedule.Definition.AddFilter(numFilter);
+                        //schedule.Definition.AddFilter(numFilter);
+                        schedule.Definition.AddFilter(levelFilter);
+                        schedule.Definition.AddFilter(regionFilter);
+                        schedule.Definition.AddSortGroupField(numberSorting);
+                        schedule.Definition.IsItemized = false;
                         trans.Commit();
                     }
                     transGroup.Assimilate();
@@ -360,7 +455,7 @@ namespace CEC_PreFabric
         //製作一個方法找到多重品類標籤
         public Element findMultiCateTag(Document doc)
         {
-            string tagetName = "M_裁切編號標籤_多重品類標籤";
+            string tagetName = "M_裁切編號標籤";
             Element targetElement = null;
             FilteredElementCollector coll = new FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_MultiCategoryTags).WhereElementIsElementType();
             foreach (Element e in coll)

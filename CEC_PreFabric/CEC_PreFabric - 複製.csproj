@@ -15,7 +15,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>CEC_PreFabric</RootNamespace>
     <AssemblyName>CEC_PreFabric</AssemblyName>
-    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -39,50 +39,16 @@
     <StartAction>Program</StartAction>
     <StartProgram>$(ProgramW6432)\Autodesk\Revit 2019\Revit.exe</StartProgram>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == '2019|AnyCPU'">
-    <OutputPath>bin\2019\</OutputPath>
-    <DefineConstants>RELEASE2019</DefineConstants>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == '2021|AnyCPU'">
-    <OutputPath>bin\2021\</OutputPath>
-    <DefineConstants>RELEASE2021</DefineConstants>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == '2023|AnyCPU'">
-    <OutputPath>bin\2023\</OutputPath>
-    <DefineConstants>RELEASE2023</DefineConstants>
-  </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="Microsoft.Office.Interop.Excel, Version=15.0.0.0, Culture=neutral, PublicKeyToken=71e9bce111e9429c, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <EmbedInteropTypes>True</EmbedInteropTypes>
-      <HintPath>C:\Program Files (x86)\Microsoft Visual Studio\Shared\Visual Studio Tools for Office\PIA\Office15\Microsoft.Office.Interop.Excel.dll</HintPath>
-    </Reference>
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
-    <Reference Include="RevitAPI, Version=19.0.0.0, Culture=neutral, processorArchitecture=AMD64" Condition="'$(Configuration)'=='2019'">
+    <Reference Include="RevitAPI">
       <HintPath>$(ProgramW6432)\Autodesk\Revit 2019\RevitAPI.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="RevitAPIUI, Version=19.0.0.0, Culture=neutral, processorArchitecture=AMD64" Condition="'$(Configuration)'=='2019'">
+    <Reference Include="RevitAPIUI">
       <HintPath>$(ProgramW6432)\Autodesk\Revit 2019\RevitAPIUI.dll</HintPath>
       <Private>False</Private>
-    </Reference>
-    <Reference Include="RevitAPI, Version=21.0.0.0, Culture=neutral, processorArchitecture=AMD64" Condition="'$(Configuration)'=='2021'">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>C:\Program Files\Autodesk\Revit 2021\RevitAPI.dll</HintPath>
-    </Reference>
-    <Reference Include="RevitAPIUI, Version=21.0.0.0, Culture=neutral, processorArchitecture=AMD64" Condition="'$(Configuration)'=='2021'">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>C:\Program Files\Autodesk\Revit 2021\RevitAPIUI.dll</HintPath>
-    </Reference>
-    <Reference Include="RevitAPI, Version=23.0.0.0, Culture=neutral, processorArchitecture=AMD64" Condition="'$(Configuration)'=='2023'">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>C:\Program Files\Autodesk\Revit 2023\RevitAPI.dll</HintPath>
-    </Reference>
-    <Reference Include="RevitAPIUI, Version=23.0.0.0, Culture=neutral, processorArchitecture=AMD64" Condition="'$(Configuration)'=='2023'">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>C:\Program Files\Autodesk\Revit 2023\RevitAPIUI.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Drawing" />
@@ -91,13 +57,10 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AdjustFitting.cs" />
     <Compile Include="App.cs" />
     <Compile Include="CleanUpNumbers.cs" />
     <Compile Include="CreateISO.cs" />
-    <Compile Include="CreateLengthTag.cs" />
     <Compile Include="DeleteAllTags.cs" />
-    <Compile Include="ExcelLog.cs" />
     <Compile Include="PreFabricUI.xaml.cs">
       <DependentUpon>PreFabricUI.xaml</DependentUpon>
     </Compile>
